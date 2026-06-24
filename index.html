@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台指選擇權保證金計算機</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Updated Font Awesome to 6.5.1 to include Threads icon -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f5f2eb; /* 柔和米色背景 */
+            color: #44403c; /* Stone 700 - 深暖灰文字 */
+        }
+        .input-group {
+            position: relative;
+        }
+        .input-label {
+            position: absolute;
+            top: -0.6rem;
+            left: 0.75rem;
+            background-color: #ffffff; /* White */
+            padding: 0 0.25rem;
+            font-size: 0.75rem;
+            color: #78716c; /* Stone 500 */
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        /* Custom Scrollbar - Light Theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5f2eb;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d6d3d1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a29e;
+        }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Card Styles */
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e7e5e4;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        
+        /* Input Styles */
+        .custom-input {
+            background-color: #fafaf9; /* Stone 50 */
+            border-color: #d6d3d1; /* Stone 300 */
+            color: #292524; /* Stone 800 */
+        }
+        .custom-input:focus {
+            background-color: #ffffff;
+            border-color: #059669; /* Emerald 600 */
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-[#5c5042] border-b border-[#4a4036] shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-calculator text-emerald-400 text-xl"></i>
+                <h1 class="text-lg font-bold text-[#f5f5f4] tracking-wide">
+                    台指選擇權 
+                    <span class="text-emerald-400">保證金計算機</span>
+                </h1>
+            </div>
+            <div class="text-xs text-[#d6d3d1] text-center sm:text-right">
+                <div>依據台灣期交所公式設計 (2025)</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Settings & Inputs -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- Global Settings Card -->
+            <div class="card rounded-xl p-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 pb-2 border-b border-stone-200 gap-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-emerald-600"></i>
+                        <h2 class="text-lg font-semibold text-stone-700">市場參數設定</h2>
+                    </div>
+                    <!-- Disclaimer Note -->
+                    <div class="bg-orange-50 text-orange-800 px-3 py-1 rounded-full text-xs font-medium border border-orange-200 flex items-center">
+                        <i class="fa-solid fa-circle-info mr-1.5"></i>
+                        本計算機適用於近月台指選擇權，遠月份不適用。
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-2 relative">
+                    <div class="input-group sm:col-span-2 lg:col-span-1">
+                        <label class="input-label">加權指數 (點)</label>
+                        <div class="flex">
+                            <input type="number" id="underlyingPrice" value="28000" class="custom-input w-full border rounded-l-lg px-3 py-2 font-mono text-right transition-colors">
+                            <a href="https://tw.stock.yahoo.com/quote/%5ETWII" target="_blank" class="bg-stone-100 hover:bg-stone-200 text-stone-600 border border-l-0 border-d6d3d1 rounded-r-lg px-3 py-2 flex items-center justify-center transition-colors" title="查看即時指數">
+                                <i class="fa-solid fa-arrow-up-right-from-square text-sm"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">A 值 (風險保證金)</label>
+                        <input type="number" id="valA" value="86000" class="custom-input w-full border rounded-lg px-3 py-2 font-mono text-right transition-colors">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">B 值 (最低保證金)</label>
+                        <input type="number" id="valB" value="43000" class="custom-input w-full border rounded-lg px-3 py-2 font-mono text-right transition-colors">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">C 值 (混合部位)</label>
+                        <input type="number" id="valC" value="8600" class="custom-input w-full border rounded-lg px-3 py-2 font-mono text-right transition-colors">
+                    </div>
+                    <!-- 自動更新狀態列 -->
+                    <div id="margin-status" class="sm:col-span-4 lg:col-span-3 flex items-center gap-2 text-xs text-stone-400 mt-1 hidden">
+                        <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                        <span id="margin-status-text">A/B/C 值已自動更新</span>
+                    </div>
+                    <div id="margin-error" class="sm:col-span-4 lg:col-span-3 flex items-center gap-2 text-xs text-amber-600 mt-1 hidden">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>無法自動取得期交所資料，請手動確認 A/B/C 值</span>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between items-center mt-3">
+                    <a href="https://www.taifex.com.tw/cht/5/indexMarging" target="_blank" class="text-xs text-emerald-600 hover:text-emerald-800 hover:underline flex items-center gap-1 transition-colors">
+                        <i class="fa-solid fa-external-link-alt"></i>
+                        查詢期交所保證金一覽表
+                    </a>
+                    <div class="text-xs text-stone-500">
+                        * TXO 契約乘數預設為 $50 TWD/點
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategy Selection & Inputs -->
+            <div class="card rounded-xl overflow-hidden">
+                
+                <!-- Tabs -->
+                <div class="flex border-b border-stone-200 bg-stone-50 overflow-x-auto">
+                    <button onclick="switchTab('single')" id="tab-single" class="tab-btn flex-1 py-3 px-4 text-sm font-medium text-emerald-700 border-b-2 border-emerald-600 bg-white hover:bg-white transition-colors whitespace-nowrap">
+                        單一部位
+                    </button>
+                    <button onclick="switchTab('spread')" id="tab-spread" class="tab-btn flex-1 py-3 px-4 text-sm font-medium text-stone-500 hover:text-stone-700 hover:bg-white transition-colors whitespace-nowrap">
+                        價差組合
+                    </button>
+                    <button onclick="switchTab('straddle')" id="tab-straddle" class="tab-btn flex-1 py-3 px-4 text-sm font-medium text-stone-500 hover:text-stone-700 hover:bg-white transition-colors whitespace-nowrap">
+                        跨式/勒式
+                    </button>
+                    <button onclick="switchTab('convert')" id="tab-convert" class="tab-btn flex-1 py-3 px-4 text-sm font-medium text-stone-500 hover:text-stone-700 hover:bg-white transition-colors whitespace-nowrap">
+                        轉換/逆轉
+                    </button>
+                </div>
+
+                <div class="p-6 min-h-[300px] bg-white">
+                    
+                    <!-- Strategy 1: Single Position -->
+                    <div id="view-single" class="strategy-view fade-in space-y-5">
+                        <div class="flex gap-4 mb-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="singleType" value="call" checked class="accent-emerald-600 w-4 h-4" onchange="calculate()">
+                                <span class="text-stone-700">賣出買權 (Sell Call)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="singleType" value="put" class="accent-emerald-600 w-4 h-4" onchange="calculate()">
+                                <span class="text-stone-700">賣出賣權 (Sell Put)</span>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="input-group">
+                                <label class="input-label">履約價 (Strike)</label>
+                                <input type="number" id="singleStrike" step="50" value="28200" class="custom-input w-full border rounded-lg px-3 py-3 text-right text-lg" oninput="calculate()">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">權利金點數 (Premium)</label>
+                                <input type="number" id="singlePremium" value="150" class="custom-input w-full border rounded-lg px-3 py-3 text-right text-lg" oninput="calculate()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Strategy 2: Spread Position -->
+                    <div id="view-spread" class="strategy-view hidden fade-in space-y-5">
+                        
+                        <!-- 1. Type Selector (Call/Put) -->
+                        <div class="flex justify-center mb-4">
+                            <div class="bg-stone-200 p-1 rounded-lg inline-flex">
+                                <label class="px-4 py-2 rounded-md cursor-pointer transition-all select-none text-stone-500 hover:text-stone-700 has-[:checked]:bg-white has-[:checked]:text-emerald-700 has-[:checked]:shadow-sm has-[:checked]:font-bold">
+                                    <input type="radio" name="spreadBaseType" value="call" checked class="peer hidden" onchange="updateSpreadType()">
+                                    <span>買權 (Call)</span>
+                                </label>
+                                <label class="px-4 py-2 rounded-md cursor-pointer transition-all select-none text-stone-500 hover:text-stone-700 has-[:checked]:bg-white has-[:checked]:text-emerald-700 has-[:checked]:shadow-sm has-[:checked]:font-bold">
+                                    <input type="radio" name="spreadBaseType" value="put" class="peer hidden" onchange="updateSpreadType()">
+                                    <span>賣權 (Put)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 2. Input Fields -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 pb-2">
+                            <div class="space-y-4">
+                                <h3 class="text-sm font-semibold text-emerald-600 uppercase tracking-wider">買進部位 (Buy)</h3>
+                                <div class="input-group">
+                                    <label class="input-label">買進履約價</label>
+                                    <input type="number" id="spreadBuyStrike" step="50" value="28400" class="custom-input w-full border rounded-lg px-3 py-2 text-right text-lg" oninput="updateSpreadType()">
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <h3 class="text-sm font-semibold text-rose-500 uppercase tracking-wider">賣出部位 (Sell)</h3>
+                                <div class="input-group">
+                                    <label class="input-label">賣出履約價</label>
+                                    <input type="number" id="spreadSellStrike" step="50" value="28000" class="custom-input w-full border rounded-lg px-3 py-2 text-right text-lg" oninput="updateSpreadType()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Auto-selected Type Indicators -->
+                        <div class="border-t border-stone-200 pt-4">
+                            <div class="text-xs text-stone-400 mb-2 text-center">根據上方輸入，系統自動判定為：</div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer bg-stone-50 p-3 rounded-lg transition-colors border border-transparent has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
+                                    <input type="radio" name="spreadType" value="callBear" checked class="accent-emerald-600 pointer-events-none" onchange="calculate()">
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-stone-700">買權空頭價差</span>
+                                        <span class="text-xs text-stone-500">Call Bear (買高賣低 - 收保證金)</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-stone-50 p-3 rounded-lg transition-colors border border-transparent has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
+                                    <input type="radio" name="spreadType" value="putBull" class="accent-emerald-600 pointer-events-none" onchange="calculate()">
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-stone-700">賣權多頭價差</span>
+                                        <span class="text-xs text-stone-500">Put Bull (買低賣高 - 收保證金)</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-stone-50 p-3 rounded-lg transition-colors border border-transparent has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50 opacity-60 has-[:checked]:opacity-100">
+                                    <input type="radio" name="spreadType" value="callBull" class="accent-emerald-600 pointer-events-none" onchange="calculate()">
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-stone-700">買權多頭價差 (免保)</span>
+                                        <span class="text-xs text-stone-500">Call Bull (買低賣高)</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer bg-stone-50 p-3 rounded-lg transition-colors border border-transparent has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50 opacity-60 has-[:checked]:opacity-100">
+                                    <input type="radio" name="spreadType" value="putBear" class="accent-emerald-600 pointer-events-none" onchange="calculate()">
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-stone-700">賣權空頭價差 (免保)</span>
+                                        <span class="text-xs text-stone-500">Put Bear (買高賣低)</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Strategy 3: Straddle/Strangle -->
+                    <div id="view-straddle" class="strategy-view hidden fade-in space-y-5">
+                        <div class="p-3 bg-blue-50 rounded border border-blue-100 mb-4 text-sm text-blue-800">
+                            <i class="fa-solid fa-info-circle text-blue-500 mr-1"></i>
+                            計算賣出買權(Call)與賣出賣權(Put)的混合部位保證金 (C值適用)。
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <!-- Call Leg -->
+                            <div class="p-4 rounded-lg bg-stone-50 border border-stone-200 space-y-4">
+                                <div class="text-sm font-semibold text-rose-500 border-b border-stone-200 pb-2">賣出買權 (Sell Call)</div>
+                                <div class="input-group">
+                                    <label class="input-label">Call 履約價</label>
+                                    <input type="number" id="mixCallStrike" step="50" value="28500" class="custom-input w-full border rounded px-3 py-2 text-right" oninput="calculate()">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Call 權利金</label>
+                                    <input type="number" id="mixCallPremium" value="80" class="custom-input w-full border rounded px-3 py-2 text-right" oninput="calculate()">
+                                </div>
+                            </div>
+                            <!-- Put Leg -->
+                            <div class="p-4 rounded-lg bg-stone-50 border border-stone-200 space-y-4">
+                                <div class="text-sm font-semibold text-rose-500 border-b border-stone-200 pb-2">賣出賣權 (Sell Put)</div>
+                                <div class="input-group">
+                                    <label class="input-label">Put 履約價</label>
+                                    <input type="number" id="mixPutStrike" step="50" value="27500" class="custom-input w-full border rounded px-3 py-2 text-right" oninput="calculate()">
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label">Put 權利金</label>
+                                    <input type="number" id="mixPutPremium" value="120" class="custom-input w-full border rounded px-3 py-2 text-right" oninput="calculate()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                     <!-- Strategy 4: Conversion/Reversal -->
+                     <div id="view-convert" class="strategy-view hidden fade-in space-y-5">
+                         <div class="flex gap-4 mb-4">
+                             <label class="flex items-center gap-2 cursor-pointer">
+                                 <input type="radio" name="convertType" value="conversion" checked class="accent-emerald-600 w-4 h-4" onchange="calculate()">
+                                 <span class="font-bold text-stone-700">轉換組合 (Conversion)</span>
+                             </label>
+                             <label class="flex items-center gap-2 cursor-pointer">
+                                 <input type="radio" name="convertType" value="reversal" class="accent-emerald-600 w-4 h-4" onchange="calculate()">
+                                 <span class="font-bold text-stone-700">逆轉組合 (Reversal)</span>
+                             </label>
+                         </div>
+                         
+                         <div class="text-sm text-stone-600 mb-4 p-3 bg-stone-50 rounded border border-stone-200">
+                             <span id="convert-desc">轉換組合：買進 Put + 賣出 Call (合成期貨空單)。保證金計算同「賣出 Call」。</span>
+                         </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                             <div class="input-group">
+                                 <label class="input-label">履約價 (Strike)</label>
+                                 <input type="number" id="convStrike" step="50" value="28000" class="custom-input w-full border rounded-lg px-3 py-3 text-right text-lg" oninput="calculate()">
+                             </div>
+                             <div class="input-group">
+                                 <label class="input-label">賣方權利金 (Premium)</label>
+                                 <input type="number" id="convPremium" value="200" class="custom-input w-full border rounded-lg px-3 py-3 text-right text-lg" oninput="calculate()">
+                             </div>
+                        </div>
+                     </div>
+
+                </div>
+                
+                <!-- Quantity Input -->
+                <div class="bg-stone-100 p-4 border-t border-stone-200 flex items-center justify-between">
+                    <label class="font-medium text-stone-700">交易口數(組數)</label>
+                    <div class="flex items-center gap-2">
+                        <button onclick="adjQty(-1)" class="w-8 h-8 rounded bg-stone-300 hover:bg-stone-400 text-stone-800 flex items-center justify-center transition-colors font-bold">-</button>
+                        <input type="number" id="lots" value="1" min="1" class="w-16 bg-transparent text-center font-mono font-bold text-lg text-stone-800 focus:outline-none" oninput="calculate()">
+                        <button onclick="adjQty(1)" class="w-8 h-8 rounded bg-stone-300 hover:bg-stone-400 text-stone-800 flex items-center justify-center transition-colors font-bold">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Results -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="card rounded-xl p-6 sticky top-24">
+                <h2 class="text-stone-500 text-sm uppercase tracking-widest font-semibold mb-6 border-b border-stone-200 pb-2">計算結果</h2>
+                
+                <div class="space-y-6">
+                    <div>
+                        <div class="text-stone-500 text-sm mb-1">單口保證金 (Per Lot)</div>
+                        <div class="text-3xl font-mono font-bold text-stone-800 tracking-tight flex items-baseline gap-1">
+                            <span class="text-lg text-emerald-600">$</span>
+                            <span id="resPerLot">0</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-stone-500 text-sm mb-1">總保證金 (Total Requirement)</div>
+                        <div class="text-4xl font-mono font-bold text-emerald-600 tracking-tight flex items-baseline gap-1">
+                            <span class="text-2xl">$</span>
+                            <span id="resTotal">0</span>
+                        </div>
+                        <div class="text-xs text-stone-500 mt-1">
+                            = 單口保證金 × <span id="resLotsDisplay">1</span> 口/組
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formula Breakdown Box -->
+                <div class="mt-8 pt-6 border-t border-stone-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-semibold text-emerald-700">計算公式詳解</h3>
+                        <button onclick="copyResult()" class="text-xs bg-stone-100 hover:bg-stone-200 px-2 py-1 rounded text-stone-600 transition-colors">
+                            <i class="fa-regular fa-copy mr-1"></i>複製
+                        </button>
+                    </div>
+                    <div id="formulaExplain" class="text-xs font-mono text-stone-700 bg-stone-50 p-3 rounded-lg leading-relaxed border border-stone-200 min-h-[80px]">
+                        初始化中...
+                    </div>
+                </div>
+
+                <!-- Error Box -->
+                <div id="errorBox" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm flex items-start gap-2">
+                    <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                    <span id="errorMsg"></span>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="bg-white w-full py-8 flex flex-col items-center mt-auto border-t border-stone-200 space-y-4">
+        <h2 class="text-xl font-bold text-rose-500 tracking-wide">華南期貨F1極速團隊</h2>
+        <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-stone-600">
+            <a href="https://www.threads.net/@f1_futures" target="_blank" class="flex items-center gap-2 hover:text-stone-800 transition-colors">
+                <i class="fa-brands fa-threads text-xl"></i>
+                <span>threads.com/@f1_futures</span>
+            </a>
+            <a href="https://www.instagram.com/f1_futures/" target="_blank" class="flex items-center gap-2 hover:text-stone-800 transition-colors">
+                <i class="fa-brands fa-instagram text-xl"></i>
+                <span>instagram.com/f1_futures</span>
+            </a>
+            <a href="http://www.youtube.com/@HNTEAMF1" target="_blank" class="flex items-center gap-2 hover:text-stone-800 transition-colors">
+                <i class="fa-brands fa-youtube text-xl text-red-600"></i>
+                <span>youtube.com/@HNTEAMF1</span>
+            </a>
+        </div>
+    </footer>
+
+    <script>
+        let currentTab = 'single';
+        const MULTIPLIER = 50; // TXO multiplier
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add event listeners to settings inputs to re-calc
+            ['underlyingPrice', 'valA', 'valB', 'valC'].forEach(id => {
+                document.getElementById(id).addEventListener('input', calculate);
+            });
+            calculate();
+
+            // 自動從 margin_data.json 讀取期交所 A/B/C 原始保證金
+            fetch('margin_data.json?t=' + Date.now())
+                .then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(data => {
+                    const txo = data.txo;
+                    if (!txo || txo.A == null || txo.B == null) throw new Error('資料格式錯誤');
+
+                    document.getElementById('valA').value = txo.A;
+                    document.getElementById('valB').value = txo.B;
+                    document.getElementById('valC').value = txo.C ?? 0;
+
+                    // 顯示更新日期（update_date 是期交所的公告日期）
+                    const dateStr = data.update_date ? `（期交所 ${data.update_date}）` : '';
+                    document.getElementById('margin-status-text').textContent =
+                        `A/B/C 值已自動更新 ${dateStr}`;
+                    document.getElementById('margin-status').classList.remove('hidden');
+
+                    calculate(); // 用新值重新計算
+                })
+                .catch(() => {
+                    // 抓取失敗：保留 HTML 預設值，顯示警告
+                    document.getElementById('margin-error').classList.remove('hidden');
+                });
+        });
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // UI Update
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-emerald-700', 'border-b-2', 'border-emerald-600', 'bg-white');
+                btn.classList.add('text-stone-500');
+                btn.classList.remove('bg-white'); // Remove active bg from inactive tabs
+            });
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.classList.remove('text-stone-500');
+            activeBtn.classList.add('text-emerald-700', 'border-b-2', 'border-emerald-600', 'bg-white');
+
+            // View Update
+            document.querySelectorAll('.strategy-view').forEach(view => view.classList.add('hidden'));
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+
+            // Force updateSpreadType if entering spread view
+            if (tab === 'spread') {
+                updateSpreadType();
+            } else {
+                calculate();
+            }
+        }
+
+        function adjQty(delta) {
+            const el = document.getElementById('lots');
+            let val = parseInt(el.value) || 0;
+            val = Math.max(1, val + delta);
+            el.value = val;
+            calculate();
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('zh-TW').format(Math.round(num));
+        }
+
+        function getVal(id) {
+            return parseFloat(document.getElementById(id).value) || 0;
+        }
+
+        // New function to auto-select spread type
+        function updateSpreadType() {
+            const baseType = document.querySelector('input[name="spreadBaseType"]:checked').value;
+            const buyK = parseFloat(document.getElementById('spreadBuyStrike').value) || 0;
+            const sellK = parseFloat(document.getElementById('spreadSellStrike').value) || 0;
+            
+            let targetType = '';
+
+            if (baseType === 'call') {
+                // Call Spread
+                if (buyK > sellK) {
+                    targetType = 'callBear'; // Credit
+                } else {
+                    targetType = 'callBull'; // Debit (or equal)
+                }
+            } else {
+                // Put Spread
+                if (buyK < sellK) {
+                    targetType = 'putBull'; // Credit
+                } else {
+                    targetType = 'putBear'; // Debit (or equal)
+                }
+            }
+
+            // Update Radio
+            const radio = document.querySelector(`input[name="spreadType"][value="${targetType}"]`);
+            if (radio) {
+                radio.checked = true;
+            }
+
+            // Recalculate immediately
+            calculate(); 
+        }
+
+        // 根據價外程度調整 A/B 值 (針對流動性風險加收)
+        function getAdjustedValues(baseA, baseB, otmPoints) {
+            let multiplier = 1;
+            let note = "";
+
+            // 規則：
+            // 價外 >= 1000 點：A、B 均加收 50%
+            // 價外 >= 500 點 (且 < 1000)：A、B 均加收 20%
+            if (otmPoints >= 1000) {
+                multiplier = 1.5;
+                note = "(價外≥1000點，A/B值加收50%)";
+            } else if (otmPoints >= 500) {
+                multiplier = 1.2;
+                note = "(價外≥500點，A/B值加收20%)";
+            }
+
+            return {
+                A: Math.round(baseA * multiplier),
+                B: Math.round(baseB * multiplier),
+                multiplier: multiplier,
+                note: note
+            };
+        }
+
+        // Core Calculation Logic
+        function calculate() {
+            // Clear errors
+            document.getElementById('errorBox').classList.add('hidden');
+            
+            const P = getVal('underlyingPrice');
+            const rawA = getVal('valA');
+            const rawB = getVal('valB');
+            const C = getVal('valC');
+            const lots = Math.max(1, parseInt(document.getElementById('lots').value) || 1);
+
+            let margin = 0;
+            let explanation = "";
+
+            // Helper to validate strike price
+            const validateStrike = (val, label) => {
+                if (val % 50 !== 0) {
+                    throw `${label} 輸入錯誤：履約價必須是 50 的倍數`;
+                }
+            };
+
+            try {
+                if (currentTab === 'single') {
+                    const type = document.querySelector('input[name="singleType"]:checked').value;
+                    const K = getVal('singleStrike');
+                    validateStrike(K, '履約價');
+
+                    const Prem = getVal('singlePremium');
+
+                    // Calculate OTM
+                    let otmPoints = 0;
+                    let typeText = "";
+                    
+                    if (type === 'call') {
+                        // Call OTM: Max((K - P), 0)
+                        otmPoints = Math.max((K - P), 0);
+                        typeText = "賣出買權 (Short Call)";
+                    } else {
+                        // Put OTM: Max((P - K), 0)
+                        otmPoints = Math.max((P - K), 0);
+                        typeText = "賣出賣權 (Short Put)";
+                    }
+                    
+                    // 取得加收後的 A/B 值
+                    const adj = getAdjustedValues(rawA, rawB, otmPoints);
+                    const finalA = adj.A;
+                    const finalB = adj.B;
+
+                    // Formula: Premium + Max(A - OTM_Value, B)
+                    // OTM Value = OTM Points * 50
+                    const otmValue = otmPoints * MULTIPLIER;
+                    const riskMargin = Math.max(finalA - otmValue, finalB);
+                    const premValue = Prem * MULTIPLIER;
+                    margin = premValue + riskMargin;
+
+                    explanation = `策略: ${typeText}\n`;
+                    explanation += `權利金市值: ${Prem} × 50 = ${formatNumber(premValue)}\n`;
+                    explanation += `價外點數 (OTM): ${formatNumber(otmPoints)} 點 ${adj.note}\n`;
+                    if(adj.multiplier > 1) {
+                        explanation += `調整後 A值: ${formatNumber(finalA)}, B值: ${formatNumber(finalB)}\n`;
+                    }
+                    explanation += `風險保證金: MAX(${formatNumber(finalA)} - ${formatNumber(otmValue)}, ${formatNumber(finalB)}) = ${formatNumber(riskMargin)}\n`;
+                    explanation += `單口合計: ${formatNumber(premValue)} + ${formatNumber(riskMargin)} = ${formatNumber(margin)}`;
+                }
+                else if (currentTab === 'spread') {
+                    // Auto-selection logic happens in updateSpreadType on input, 
+                    // but we still need to validate for calculation here.
+                    const type = document.querySelector('input[name="spreadType"]:checked').value;
+                    const buyK = getVal('spreadBuyStrike');
+                    const sellK = getVal('spreadSellStrike');
+
+                    validateStrike(buyK, '買進履約價');
+                    validateStrike(sellK, '賣出履約價');
+
+                    // 價差單通常採鎖定最大風險計算 (差額x50)，不使用 A/B 值，故無需加收
+                    if (type === 'callBear') {
+                        // Call Bear: Buy High K, Sell Low K
+                        // Margin = (Buy K - Sell K) * 50
+                        if (buyK <= sellK) throw "買權空頭價差：買進履約價必須大於賣出履約價 (系統應已自動切換，請檢查輸入)";
+                        margin = (buyK - sellK) * MULTIPLIER;
+                        explanation = `策略: 買權空頭價差 (Call Bear)\n`;
+                        explanation += `公式: (買進履約 - 賣出履約) × 50\n`;
+                        explanation += `計算: (${buyK} - ${sellK}) × 50 = ${formatNumber(margin)}`;
+                    } 
+                    else if (type === 'putBull') {
+                        // Put Bull: Buy Low K, Sell High K
+                        // Margin = (Sell K - Buy K) * 50
+                        if (buyK >= sellK) throw "賣權多頭價差：買進履約價必須小於賣出履約價 (系統應已自動切換，請檢查輸入)";
+                        margin = (sellK - buyK) * MULTIPLIER;
+                        explanation = `策略: 賣權多頭價差 (Put Bull)\n`;
+                        explanation += `公式: (賣出履約 - 買進履約) × 50\n`;
+                        explanation += `計算: (${sellK} - ${buyK}) × 50 = ${formatNumber(margin)}`;
+                    }
+                    else {
+                        // Call Bull or Put Bear (Long side covers Short side)
+                        margin = 0;
+                        explanation = "策略: 買權多頭 / 賣權空頭\n規則: 權利金/保證金已鎖定或由買方部位涵蓋，無額外保證金需求（依期交所組合部位規定）。";
+                    }
+                }
+                else if (currentTab === 'straddle') {
+                    // MAX(CallMargin, PutMargin) + Premium_Lower + C
+                    const K_call = getVal('mixCallStrike');
+                    const Prem_call = getVal('mixCallPremium');
+                    const K_put = getVal('mixPutStrike');
+                    const Prem_put = getVal('mixPutPremium');
+
+                    validateStrike(K_call, 'Call 履約價');
+                    validateStrike(K_put, 'Put 履約價');
+
+                    // 1. Calculate Standalone Margins with specific OTM Adjustments
+                    // Call Leg
+                    const call_otmPoints = Math.max((K_call - P), 0);
+                    const adjCall = getAdjustedValues(rawA, rawB, call_otmPoints);
+                    
+                    const call_otmValue = call_otmPoints * MULTIPLIER;
+                    const call_Risk = Math.max(adjCall.A - call_otmValue, adjCall.B);
+                    const call_PremVal = Prem_call * MULTIPLIER;
+                    const margin_Call_Total = call_PremVal + call_Risk;
+
+                    // Put Leg
+                    const put_otmPoints = Math.max((P - K_put), 0);
+                    const adjPut = getAdjustedValues(rawA, rawB, put_otmPoints);
+
+                    const put_otmValue = put_otmPoints * MULTIPLIER;
+                    const put_Risk = Math.max(adjPut.A - put_otmValue, adjPut.B);
+                    const put_PremVal = Prem_put * MULTIPLIER;
+                    const margin_Put_Total = put_PremVal + put_Risk;
+
+                    // 2. Compare Logic
+                    let maxMarginSide = 0;
+                    let lowerPrem = 0;
+                    
+                    if (margin_Call_Total >= margin_Put_Total) {
+                        maxMarginSide = margin_Call_Total;
+                        lowerPrem = put_PremVal;
+                    } else {
+                        maxMarginSide = margin_Put_Total;
+                        lowerPrem = call_PremVal;
+                    }
+
+                    margin = maxMarginSide + lowerPrem + C;
+
+                    explanation = `部位 A (Call): ${formatNumber(margin_Call_Total)} (含權利金)\n`;
+                    if(adjCall.multiplier > 1) explanation += `   └ OTM ${call_otmPoints}點 ${adjCall.note}, A:${adjCall.A}, B:${adjCall.B}\n`;
+                    
+                    explanation += `部位 B (Put): ${formatNumber(margin_Put_Total)} (含權利金)\n`;
+                    if(adjPut.multiplier > 1) explanation += `   └ OTM ${put_otmPoints}點 ${adjPut.note}, A:${adjPut.A}, B:${adjPut.B}\n`;
+
+                    explanation += `取大者: ${formatNumber(maxMarginSide)}\n`;
+                    explanation += `加較低方權利金: ${formatNumber(lowerPrem)}\n`;
+                    explanation += `加 C 值: ${formatNumber(C)}\n`;
+                    explanation += `總計: ${formatNumber(margin)}`;
+                }
+                else if (currentTab === 'convert') {
+                    const type = document.querySelector('input[name="convertType"]:checked').value;
+                    const K = getVal('convStrike');
+                    validateStrike(K, '履約價');
+                    const Prem = getVal('convPremium'); 
+
+                    // Conversion: Buy Put + Sell Call -> Treat as Short Call
+                    // Reversal: Buy Call + Sell Put -> Treat as Short Put
+                    
+                    let otmPoints = 0;
+                    let typeText = "";
+
+                    if (type === 'conversion') {
+                        document.getElementById('convert-desc').innerText = "轉換組合：買進 Put + 賣出 Call (合成期貨空單)。保證金依「賣出 Call」計算。";
+                        // Short Call Logic
+                        otmPoints = Math.max((K - P), 0);
+                        typeText = "轉換組合 (視同賣出買權)";
+                    } else {
+                        document.getElementById('convert-desc').innerText = "逆轉組合：買進 Call + 賣出 Put (合成期貨多單)。保證金依「賣出 Put」計算。";
+                        // Short Put Logic
+                        otmPoints = Math.max((P - K), 0);
+                        typeText = "逆轉組合 (視同賣出賣權)";
+                    }
+                    
+                    // 取得加收後的 A/B 值
+                    const adj = getAdjustedValues(rawA, rawB, otmPoints);
+                    const finalA = adj.A;
+                    const finalB = adj.B;
+
+                    const otmValue = otmPoints * MULTIPLIER;
+                    const riskMargin = Math.max(finalA - otmValue, finalB);
+                    const premValue = Prem * MULTIPLIER;
+                    margin = premValue + riskMargin;
+
+                    explanation = `策略: ${typeText}\n`;
+                    explanation += `賣方權利金市值: ${formatNumber(premValue)}\n`;
+                    explanation += `價外點數 (OTM): ${formatNumber(otmPoints)} 點 ${adj.note}\n`;
+                    if(adj.multiplier > 1) {
+                        explanation += `調整後 A值: ${formatNumber(finalA)}, B值: ${formatNumber(finalB)}\n`;
+                    }
+                    explanation += `計算: ${formatNumber(premValue)} + MAX(${finalA} - ${otmValue}, ${finalB})`;
+                }
+
+            } catch (e) {
+                document.getElementById('errorBox').classList.remove('hidden');
+                document.getElementById('errorMsg').innerText = e;
+                margin = 0;
+                explanation = "計算發生錯誤，請檢查輸入數值是否正確。";
+            }
+
+            // Update Display
+            const totalMargin = margin * lots;
+            document.getElementById('resPerLot').innerText = formatNumber(margin);
+            document.getElementById('resTotal').innerText = formatNumber(totalMargin);
+            document.getElementById('resLotsDisplay').innerText = lots;
+            document.getElementById('formulaExplain').innerText = explanation;
+        }
+
+        function copyResult() {
+            const txt = document.getElementById('formulaExplain').innerText;
+            
+            // Fallback for iframe/permission issues
+            const textArea = document.createElement("textarea");
+            textArea.value = txt;
+            
+            // Ensure it's not visible but part of the DOM
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            document.body.appendChild(textArea);
+            
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if(successful) {
+                     alert("計算過程已複製到剪貼簿");
+                } else {
+                     alert("複製失敗，請手動選取複製");
+                }
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+                alert("複製失敗，請手動選取複製");
+            }
+            
+            document.body.removeChild(textArea);
+        }
+    </script>
+</body>
+</html>
